@@ -32,10 +32,10 @@ export class Calendar extends Component {
                                                 //load previous
                                                 if(i == 0 && day.dayNumber!=0){
                                                     return (
-                                                        [<td colSpan={day.dayNumber}>&nbsp;</td>,<td>{day.id}</td>]
+                                                        [<td colSpan={day.dayNumber} className="default">&nbsp;</td>, <td className={day.class}>{day.id}</td>]
                                                     )
                                                 }
-                                                return (<td>{day.id}</td>)
+                                                return (<td className={day.class}>{day.id}</td>)
                                             })
                                         }
                                     </tr>

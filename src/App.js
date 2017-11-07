@@ -2,17 +2,20 @@ import React, { Component } from 'react';
 import moment from "moment";
 import './App.css';
 import {Calendar} from './components/calendar/Calendar';
+import axios from 'axios';
+
 
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      startDate:moment().format('YYYY-MM-DD'),
-      numberOfDays:30,
+      startDate:'2008-08-15',
+      numberOfDays:17,
       countryCode:'US',
       calendar:[]
     };
     this.handleChanges = this.handleChanges.bind(this);
+    this.holidays = [];
   }
   handleChanges(event) {
     const target = event.target;
@@ -23,17 +26,38 @@ class App extends Component {
     });
     
   }
-  updateCalendar() {
-    console.log('state', this.state);
+  dayClass(date$, holidays) {
+    this.holidays = Object.values(holidays);
+    let holiday = this.holidays.findIndex(h => h[0].date == date$.format('YYYY-MM-DD'));
+    if(holiday == -1) {
+      switch(date$.day()) {
+        case 0: case 6: return 'weekends';
+        case 5: case 1: case 2: case 3: case 4: return 'weekdays';
+        default: return 'default';
+      }
+    } else {
+      return 'holiday';
+    }
+  }
+  getHolidaysData() {
+    return new Promise((resolve, reject) => {
+      axios.get('https://holidayapi.com/v1/holidays?key=2c6f2acd-ad3c-427f-b5e1-6a685f16c0b1&country='+this.state.countryCode+'&year=2008')
+        .then((res) => {
+          if(res.status == 200 && res.data.status == 200) {
+            resolve(res.data.holidays);
+          }
+          reject();
+        })
+        .catch(err => reject(err));
+
+    });
+  }
+  updateCalendar(holidays) {
     let start$ = moment(this.state.startDate).format('YYYY-MM-DD');
-    console.log('startM', start$);
     let end$ = moment(start$).add(this.state.numberOfDays,'days').format('YYYY-MM-DD');
-    console.log('endM', end$);
     let acum$ = moment(start$);
 
     let months = [];
-
-    console.log(acum$.month());
 
     while(moment(end$).isAfter(acum$)){
 
@@ -59,30 +83,14 @@ class App extends Component {
       }
 
       //add actual day
-      months[month].weeks.find(w => w.id == acum$.week()).days.push({id:acum$.format('DD'), dayNumber:acum$.day()});
+      months[month].weeks.find(w => w.id == acum$.week()).days.push({
+        id:acum$.format('DD'), 
+        dayNumber:acum$.day(),
+        class:this.dayClass(acum$, holidays)
+      });
 
-
-
-
-      // let actualMonth = months.findIndex(m => m.id == acum$.month()+1);
-      // debugger;
-      // if(actualMonth == -1){
-      //   //if month is not defined then set
-      //   actualMonth = acum$.month() + 1;
-      // }
-      // months.push({id:actualMonth, name:acum$.format('MMMM'), maxDays:acum$.daysInMonth(), year:acum$.format('YYYY'), weeks:[]});
-
-      // let actualWeek = months[actualMonth].weeks.findIndex(w => w.id == acum$.week());
-      // if(actualWeek == -1){
-      //   months[actualMonth].weeks.push({id:acum$.week(), days:[]});
-      // }
-
-      // months[actualMonth].weeks.find(w => w.id == acum$.week()).days.push({id:acum$.format('DD'), dayNumber:acum$.day()});
-      
       acum$.add(1, 'day');
     }
-
-    console.log('calendar', months);
 
 
     this.setState({
@@ -90,8 +98,10 @@ class App extends Component {
     });
   }
   onSubmitForm(event) {
-    console.log(this.state);
-    this.updateCalendar();
+    this.getHolidaysData()
+      .then((data) => {
+        this.updateCalendar(data);
+      });
     event.preventDefault();
   }
   render() {
