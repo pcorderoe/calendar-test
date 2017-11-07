@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import moment from "moment";
 import './App.css';
+import {Calendar} from './components/calendar/Calendar';
 
 class App extends Component {
   constructor(props) {
@@ -8,7 +9,8 @@ class App extends Component {
     this.state = {
       startDate:moment().format('YYYY-MM-DD'),
       numberOfDays:30,
-      countryCode:'US'
+      countryCode:'US',
+      calendar:[]
     };
     this.handleChanges = this.handleChanges.bind(this);
   }
@@ -19,9 +21,77 @@ class App extends Component {
     this.setState({
       [name]:value
     });
+    
+  }
+  updateCalendar() {
+    console.log('state', this.state);
+    let start$ = moment(this.state.startDate).format('YYYY-MM-DD');
+    console.log('startM', start$);
+    let end$ = moment(start$).add(this.state.numberOfDays,'days').format('YYYY-MM-DD');
+    console.log('endM', end$);
+    let acum$ = moment(start$);
+
+    let months = [];
+
+    console.log(acum$.month());
+
+    while(moment(end$).isAfter(acum$)){
+
+      //month
+      let month = months.findIndex(m => m.id == acum$.month() + 1);
+      if(month == -1) {
+        months.push({
+          id:acum$.month()+1,
+          name:acum$.format('MMMM'),
+          year:acum$.format('YYYY'),
+          weeks:[]
+        });
+      }
+      month = months.findIndex(m => m.id == acum$.month() + 1);
+      
+      //weeks
+      let week = months[month].weeks.findIndex(w => w.id == acum$.week());
+      if(week == -1) {
+        months[month].weeks.push({
+          id:acum$.week(),
+          days:[]
+        });
+      }
+
+      //add actual day
+      months[month].weeks.find(w => w.id == acum$.week()).days.push({id:acum$.format('DD'), dayNumber:acum$.day()});
+
+
+
+
+      // let actualMonth = months.findIndex(m => m.id == acum$.month()+1);
+      // debugger;
+      // if(actualMonth == -1){
+      //   //if month is not defined then set
+      //   actualMonth = acum$.month() + 1;
+      // }
+      // months.push({id:actualMonth, name:acum$.format('MMMM'), maxDays:acum$.daysInMonth(), year:acum$.format('YYYY'), weeks:[]});
+
+      // let actualWeek = months[actualMonth].weeks.findIndex(w => w.id == acum$.week());
+      // if(actualWeek == -1){
+      //   months[actualMonth].weeks.push({id:acum$.week(), days:[]});
+      // }
+
+      // months[actualMonth].weeks.find(w => w.id == acum$.week()).days.push({id:acum$.format('DD'), dayNumber:acum$.day()});
+      
+      acum$.add(1, 'day');
+    }
+
+    console.log('calendar', months);
+
+
+    this.setState({
+      calendar:months
+    });
   }
   onSubmitForm(event) {
     console.log(this.state);
+    this.updateCalendar();
     event.preventDefault();
   }
   render() {
@@ -56,21 +126,14 @@ class App extends Component {
         </form>
         {/* Calendar wrapper */}
         <div className="calendarWrapper">
-          
+          {
+            
+            this.state.calendar.map((e, i) => {
+              return <Calendar month={e} key={e.id}></Calendar>
+            })
+          }
         </div>
       </div>
-
-
-
-      // <div className="App">
-      //   <header className="App-header">
-      //     <img src={logo} className="App-logo" alt="logo" />
-      //     <h1 className="App-title">Welcome to React</h1>
-      //   </header>
-      //   <p className="App-intro">
-      //     To get started, edit <code>src/App.js</code> and save to reload.
-      //   </p>
-      // </div>
     );
   }
 }
